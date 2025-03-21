@@ -1,12 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { getGeminiResponse } from '../utils/geminiApi'; // Import the Gemini API utility
+import { getGeminiResponse } from '../utils/geminiApi';
 import Message from './Message';
+import { FaMicrophone } from 'react-icons/fa';
 
 const Chatbot = ({ darkMode, updateSearchHistory }) => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isListening, setIsListening] = useState(false);
-  const [isThinking, setIsThinking] = useState(false); // Add "AI Thinking" state
+  const [isThinking, setIsThinking] = useState(false);
   const [recognition, setRecognition] = useState(null);
   const messagesEndRef = useRef(null);
 
@@ -19,7 +20,6 @@ const Chatbot = ({ darkMode, updateSearchHistory }) => {
   }, [messages]);
 
   useEffect(() => {
-    // Initialize speech recognition
     const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
     if (!SpeechRecognition) {
       alert('Speech recognition is not supported in this browser.');
@@ -27,14 +27,14 @@ const Chatbot = ({ darkMode, updateSearchHistory }) => {
     }
 
     const recognitionInstance = new SpeechRecognition();
-    recognitionInstance.continuous = false; // Stop after one sentence
-    recognitionInstance.interimResults = false; // Only final results
+    recognitionInstance.continuous = false;
+    recognitionInstance.interimResults = false;
     recognitionInstance.lang = 'en-US';
 
     recognitionInstance.onresult = (event) => {
       const transcript = event.results[0][0].transcript;
-      setInput(transcript); // Set recorded text to input
-      setIsListening(false); // Stop listening
+      setInput(transcript);
+      setIsListening(false);
     };
 
     recognitionInstance.onerror = (event) => {
@@ -43,13 +43,13 @@ const Chatbot = ({ darkMode, updateSearchHistory }) => {
     };
 
     recognitionInstance.onend = () => {
-      setIsListening(false); // Ensure listening stops
+      setIsListening(false);
     };
 
     setRecognition(recognitionInstance);
 
     return () => {
-      recognitionInstance.stop(); // Cleanup
+      recognitionInstance.stop();
     };
   }, []);
 
@@ -58,36 +58,36 @@ const Chatbot = ({ darkMode, updateSearchHistory }) => {
 
     const userMessage = { text: input, isUser: true };
     setMessages((prev) => [...prev, userMessage]);
-    updateSearchHistory(input); // Add to search history
+    updateSearchHistory(input);
     setInput('');
-    setIsThinking(true); // Start "AI Thinking"
+    setIsThinking(true);
 
     try {
-      const aiResponse = await getGeminiResponse(input); // Get Gemini response
+      const aiResponse = await getGeminiResponse(input);
       const botMessage = { text: aiResponse, isUser: false };
       setMessages((prev) => [...prev, botMessage]);
     } catch (error) {
       console.error('Error fetching AI response:', error);
     } finally {
-      setIsThinking(false); // Stop "AI Thinking"
+      setIsThinking(false);
     }
   };
 
   const handleEditMessage = async (index, newText) => {
     const updatedMessages = [...messages];
-    updatedMessages[index].text = newText; // Update the user message
+    updatedMessages[index].text = newText;
     setMessages(updatedMessages);
 
-    setIsThinking(true); // Start "AI Thinking"
+    setIsThinking(true);
 
     try {
-      const aiResponse = await getGeminiResponse(newText); // Regenerate AI response
+      const aiResponse = await getGeminiResponse(newText);
       const botMessage = { text: aiResponse, isUser: false };
-      setMessages((prev) => [...prev.slice(0, index + 1), botMessage, ...prev.slice(index + 2)]); // Preserve subsequent messages
+      setMessages((prev) => [...prev.slice(0, index + 1), botMessage, ...prev.slice(index + 2)]);
     } catch (error) {
       console.error('Error fetching AI response:', error);
     } finally {
-      setIsThinking(false); // Stop "AI Thinking"
+      setIsThinking(false);
     }
   };
 
@@ -101,26 +101,35 @@ const Chatbot = ({ darkMode, updateSearchHistory }) => {
 
   const handleVoiceInput = () => {
     if (isListening) {
-      recognition.stop(); // Stop recording
+      recognition.stop();
       setIsListening(false);
     } else {
-      recognition.start(); // Start recording
+      recognition.start();
       setIsListening(true);
     }
   };
 
   return (
-    <div className={`flex flex-col h-full ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
-      <div className="flex-1 p-4 overflow-y-auto pb-24"> {/* Add padding-bottom to avoid overlap */}
+    <div className={`flex flex-col h-full ${darkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-900'}`}>
+      <div className="flex-1 p-4 overflow-y-auto pb-24">
+        {messages.length === 0 && (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <h1 className="text-4xl font-bold">Welcome to RchatAI</h1>
+              <p className="mt-2 text-lg">Start chatting with the AI to get answers!</p>
+            </div>
+          </div>
+        )}
+
         {messages.map((msg, index) => (
           <Message
             key={index}
             text={msg.text}
             isUser={msg.isUser}
             darkMode={darkMode}
-            onEdit={(newText) => handleEditMessage(index, newText)} // Pass edit handler
-            onLike={handleLike} // Pass like handler
-            onDislike={handleDislike} // Pass dislike handler
+            onEdit={(newText) => handleEditMessage(index, newText)}
+            onLike={handleLike}
+            onDislike={handleDislike}
           />
         ))}
         {isThinking && (
@@ -133,7 +142,6 @@ const Chatbot = ({ darkMode, updateSearchHistory }) => {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Fixed Search Bar at Bottom */}
       <div className={`fixed bottom-0 left-0 right-0 p-4 border-t ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
         <div className="flex items-center">
           <input
@@ -148,7 +156,7 @@ const Chatbot = ({ darkMode, updateSearchHistory }) => {
             onClick={handleVoiceInput}
             className={`ml-2 p-2 rounded-full ${isListening ? 'bg-red-500' : 'bg-blue-500'} text-white`}
           >
-            {isListening ? '🛑' : '🎤'}
+            <FaMicrophone />
           </button>
           <button
             onClick={handleSend}
